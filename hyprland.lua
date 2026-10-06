@@ -55,12 +55,35 @@ hl.config({ ecosystem = { enforce_permissions = true } })
 hl.permission("/usr/bin/hyprpicker", "screencopy", "allow")
 hl.permission("/usr/bin/grim", "screencopy", "allow")
 hl.permission("/usr/bin/grimblast", "screencopy", "allow")
+hl.permission("/home/lucas/.local/src/hyprexpo/hyprexpo.so", "plugin", "allow")
 
 ----------------
 -- HYPRSPLIT
 ----------------
 
 hs.config({ num_workspaces = 5 })
+
+----------------
+-- HYPREXPO (workspace overview, built from ~/.local/src/hyprexpo; rebuild with `make all` after Hyprland updates)
+----------------
+
+hl.plugin.load("/home/lucas/.local/src/hyprexpo/hyprexpo.so")
+
+hl.config({
+    plugin = {
+        hyprexpo = {
+            columns          = 5,
+            rows             = 1,
+            workspace_method = "HDMI-A-1 first 1, HDMI-A-2 first 6", -- hyprsplit: 5 per monitor
+            gaps_in          = 8,
+            gaps_out         = 24,
+            bg_col           = "rgb(11111b)",
+            border_width     = 2,
+            label_enable     = 1,
+            keynav_enable    = 1,
+        },
+    },
+})
 
 ----------------
 -- LOOK AND FEEL
@@ -110,8 +133,7 @@ hl.config({
 hl.config({
     input = {
         kb_layout    = "fi,us",
-        follow_mouse = 0,
-        float_switch_override_focus = 0, -- mouse crossing floating<->tiled must not steal focus (wofi)
+        follow_mouse = 1,
         sensitivity  = 0,
         touchpad     = { natural_scroll = false },
     },
@@ -171,12 +193,19 @@ hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd("pkill hyprmag || hyprmag"))
 -- Draw on screen
 hl.bind(mainMod .. " + SHIFT + D", hl.dsp.exec_cmd("pkill -SIGUSR1 wayscriber"))
 
+-- Workspace overview
+hl.bind(mainMod .. " + TAB", function() hl.plugin.hyprexpo.expo("toggle") end)
+
 -- Emoji
 hl.bind(mainMod .. " + SHIFT + E", hl.dsp.exec_cmd("~/.config/hypr/scripts/emoji.sh"))
 
 -- Per-monitor workspaces (hyprsplit)
 for i = 1, 6 do
-    hl.bind(mainMod .. " + " .. i, hs.dsp.focus({ workspace = i }))
+    local focus = hs.dsp.focus({ workspace = i })
+    hl.bind(mainMod .. " + " .. i, function()
+        focus()
+        hl.exec_cmd("~/.config/waybar/scripts/flash.sh")
+    end)
     hl.bind(mainMod .. " + SHIFT + " .. i, hs.dsp.window.move({ workspace = i, follow = false }))
 end
 
@@ -240,4 +269,5 @@ hl.window_rule({
     match  = { class = "^(wofi)$" },
     float  = true,
     center = true,
+    stay_focused = true, -- keyboard locked to wofi until it closes
 })
